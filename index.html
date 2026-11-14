@@ -1,0 +1,155 @@
+
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="theme-color" content="#173B35">
+  <title>Dawood Fam Finance</title>
+
+  <script src="https://accounts.google.com/gsi/client" async defer></script>
+
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      background: #F7F8F5;
+      color: #173B35;
+      display: grid;
+      place-items: center;
+      min-height: 90vh;
+      margin: 0;
+    }
+    main {
+      background: white;
+      padding: 28px;
+      border-radius: 16px;
+      width: min(85%, 380px);
+      text-align: center;
+      box-shadow: 0 4px 20px #00000012;
+    }
+    h1 { font-size: 24px; }
+    p { color: #65736D; line-height: 1.5; }
+    button {
+      background: #173B35;
+      color: white;
+      border: 0;
+      padding: 13px 22px;
+      border-radius: 8px;
+      cursor: pointer;
+      font-size: 15px;
+    }
+    #status {
+      margin-top: 20px;
+      overflow-wrap: anywhere;
+      font-size: 14px;
+    }
+  </style>
+</head>
+
+<body>
+<main>
+  <h1>Dawood Fam Finance</h1>
+  <p>Silakan login menggunakan akun Google keluarga.</p>
+
+  <button id="loginButton" disabled>Login with Google</button>
+  <div id="status">Menyiapkan login...</div>
+</main>
+
+<script>
+  const CLIENT_ID = '566836411644-tu4dt3manjr09t8b3s6i5bsvu2s4ja25.apps.googleusercontent.com';
+  const DEPLOYMENT_ID = 'AKfycbyU9vEElJ216vUrRmOEpZ0lGvRjUhEfy_4c10F9GhyF8e1khThpyuZaiDlI5jbxfDLZ';
+
+  const SCOPES = [
+    'https://www.googleapis.com/auth/spreadsheets',
+    'https://www.googleapis.com/auth/userinfo.email'
+  ].join(' ');
+
+  let tokenClient;
+  let accessToken = '';
+
+  const statusBox = document.getElementById('status');
+  const loginButton = document.getElementById('loginButton');
+
+  function setStatus(message) {
+    statusBox.textContent = message;
+  }
+
+  function initializeGoogleLogin() {
+    if (!window.google?.accounts?.oauth2) {
+      setStatus('Google Login belum siap. Muat ulang halaman.');
+      return;
+    }
+
+    tokenClient = google.accounts.oauth2.initTokenClient({
+      client_id: CLIENT_ID,
+      scope: SCOPES,
+      callback: async (response) => {
+        if (response.error) {
+          setStatus('Login gagal: ' + response.error);
+          return;
+        }
+
+        accessToken = response.access_token;
+        await testConnection();
+      }
+    });
+
+    loginButton.disabled = false;
+    setStatus('Siap. Silakan login.');
+  }
+
+  async function testConnection() {
+    setStatus('Menghubungkan ke Apps Script...');
+
+    try {
+      const response = await fetch(
+        `https://script.googleapis.com/v1/scripts/${DEPLOYMENT_ID}:run`,
+        {
+          method: 'POST',
+          headers: {
+            'Authorization': 'Bearer ' + accessToken,
+            'Content-Type': 'application/json'
+          },
+          body: JSON.stringify({
+            function: 'testCurrentUser',
+            parameters: []
+          })
+        }
+      );
+
+      const data = await response.json();
+
+      if (!response.ok) {
+        throw new Error(data.error?.message || 'HTTP ' + response.status);
+      }
+
+      if (data.error) {
+        throw new Error(
+          data.error.details?.[0]?.errorMessage ||
+          data.error.message ||
+          'Apps Script execution failed'
+        );
+      }
+
+      setStatus(
+        'Koneksi berhasil! Akun terdeteksi: ' +
+        (data.response?.result || 'Email tidak terdeteksi')
+      );
+
+    } catch (error) {
+      setStatus('Koneksi gagal: ' + error.message);
+    }
+  }
+
+  loginButton.addEventListener('click', () => {
+    if (!tokenClient) return;
+
+    tokenClient.requestAccessToken({
+      prompt: 'consent'
+    });
+  });
+
+  window.addEventListener('load', initializeGoogleLogin);
+</script>
+</body>
+</html>
