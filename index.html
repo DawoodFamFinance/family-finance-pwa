@@ -6,149 +6,788 @@
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <meta name="theme-color" content="#173B35">
   <title>Dawood Fam Finance</title>
-
   <script src="https://accounts.google.com/gsi/client" async defer></script>
-
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
   <style>
+    :root {
+      --teal: #287f78;
+      --teal-light: #e7f3f1;
+      --pink: #f5e8ec;
+      --ink: #263b3a;
+      --muted: #7b8987;
+      --line: #e9efed;
+      --bg: #f6f9f8;
+      --white: #fff;
+    }
+    * { box-sizing: border-box; }
     body {
-      font-family: Arial, sans-serif;
-      background: #F7F8F5;
-      color: #173B35;
-      display: grid;
-      place-items: center;
-      min-height: 90vh;
       margin: 0;
+      background: var(--bg);
+      color: var(--ink);
+      font-family: Arial, sans-serif;
     }
-    main {
-      background: white;
-      padding: 28px;
-      border-radius: 16px;
-      width: min(85%, 380px);
-      text-align: center;
-      box-shadow: 0 4px 20px #00000012;
+    button, input, select { font: inherit; }
+    button { cursor: pointer; }
+    .app { max-width: 1200px; margin: auto; padding: 22px; }
+    header {
+      display: flex; justify-content: space-between;
+      align-items: center; gap: 12px; margin-bottom: 24px;
     }
-    h1 { font-size: 24px; }
-    p { color: #65736D; line-height: 1.5; }
-    button {
-      background: #173B35;
-      color: white;
-      border: 0;
-      padding: 13px 22px;
-      border-radius: 8px;
-      cursor: pointer;
-      font-size: 15px;
+    .brand { font-size: 22px; font-weight: 700; }
+    .brand span { color: var(--teal); }
+    .subtitle { color: var(--muted); font-size: 13px; margin-top: 5px; }
+    .periods { display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 18px; }
+    .periods button, .secondary {
+      border: 1px solid var(--line); background: white;
+      border-radius: 20px; padding: 9px 15px; color: var(--ink);
     }
-    #status {
-      margin-top: 20px;
-      overflow-wrap: anywhere;
-      font-size: 14px;
+    .periods button.active { background: var(--teal); color: white; border-color: var(--teal); }
+    .date-range { display: flex; gap: 8px; flex-wrap: wrap; margin-bottom: 18px; }
+    .date-range input { max-width: 170px; }
+    .cards {
+      display: grid; grid-template-columns: repeat(3, 1fr);
+      gap: 14px; margin-bottom: 18px;
     }
+    .card, .panel {
+      background: white; border: 1px solid var(--line);
+      border-radius: 16px; padding: 18px;
+    }
+    .card-label { color: var(--muted); font-size: 13px; }
+    .amount { font-size: 24px; font-weight: 700; margin-top: 12px; overflow-wrap: anywhere; }
+    .income { color: #287f78; }
+    .expense { color: #c36b83; }
+    .balance { color: #385e89; }
+    .section-title { font-size: 16px; font-weight: 700; margin-bottom: 16px; }
+    .charts { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; margin-bottom: 18px; }
+    .chart-wrap { height: 260px; position: relative; }
+    .toolbar {
+      display: flex; justify-content: space-between;
+      align-items: center; flex-wrap: wrap; gap: 10px; margin-bottom: 14px;
+    }
+    .primary {
+      border: 0; background: var(--teal); color: white;
+      padding: 11px 17px; border-radius: 22px; font-weight: 600;
+    }
+    input, select {
+      border: 1px solid var(--line); background: white;
+      border-radius: 10px; padding: 10px; color: var(--ink);
+      min-width: 0;
+    }
+    .search { width: 230px; }
+    .table-wrap { overflow-x: auto; }
+    table { width: 100%; border-collapse: collapse; min-width: 650px; }
+    th, td { text-align: left; padding: 12px 9px; border-bottom: 1px solid var(--line); font-size: 13px; }
+    th { color: var(--muted); font-weight: 600; }
+    .tag { padding: 5px 9px; border-radius: 12px; font-size: 11px; background: var(--teal-light); }
+    .tag.exp { background: var(--pink); }
+    .actions button { border: 0; background: none; color: var(--teal); padding: 4px; }
+    .empty { text-align: center; color: var(--muted); padding: 28px; }
+    .insights { display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px; margin-bottom: 18px; }
+    .insight { background: var(--teal-light); border-radius: 12px; padding: 14px; font-size: 13px; line-height: 1.5; }
+    .modal-backdrop {
+      display: none; position: fixed; inset: 0; background: #172b2a88;
+      z-index: 10; align-items: center; justify-content: center; padding: 16px;
+    }
+    .modal {
+      width: 100%; max-width: 440px; max-height: 90vh; overflow: auto;
+      background: white; border-radius: 18px; padding: 22px;
+    }
+    .modal h2 { margin: 0 0 18px; font-size: 19px; }
+    .form-grid { display: grid; gap: 12px; }
+    .form-grid label { font-size: 12px; color: var(--muted); display: grid; gap: 6px; }
+    .form-grid input, .form-grid select { width: 100%; }
+    .modal-actions { display: flex; justify-content: flex-end; gap: 8px; margin-top: 18px; }
+    .status { color: var(--muted); font-size: 13px; padding: 12px 0; }
+    .benchmark-row { margin: 12px 0; }
+    .benchmark-head { display: flex; justify-content: space-between; gap: 8px; font-size: 12px; margin-bottom: 6px; }
+    .bar { height: 8px; background: #edf1f0; border-radius: 10px; overflow: hidden; }
+    .bar > div { height: 100%; background: var(--teal); border-radius: 10px; }
+    .danger { color: #c15c70 !important; }
+    @media(max-width:700px) {
+      .app { padding: 15px; }
+      header { align-items: flex-start; }
+      .cards { grid-template-columns: 1fr; gap: 10px; }
+      .amount { font-size: 22px; }
+      .charts { grid-template-columns: 1fr; }
+      .insights { grid-template-columns: 1fr; }
+      .chart-wrap { height: 230px; }
+      .search { width: 100%; }
+    }
+
+    .login-wrap { min-height:100vh; display:flex; align-items:center; justify-content:center; padding:20px; }
+    .login-card { width:100%; max-width:420px; background:#fff; border:1px solid var(--line); border-radius:20px; padding:28px; text-align:center; box-shadow:0 12px 35px #173b3510; }
+    .login-card h1 { margin:0 0 8px; font-size:25px; }
+    .login-card p { color:var(--muted); line-height:1.55; font-size:14px; }
+    .login-card button { margin-top:12px; }
+    .login-status { min-height:22px; margin-top:16px; color:var(--muted); font-size:13px; overflow-wrap:anywhere; }
+    .account-tools { display:flex; align-items:center; gap:10px; flex-wrap:wrap; justify-content:flex-end; }
+    .role-pill { display:inline-block; padding:6px 10px; border-radius:20px; background:var(--teal-light); color:var(--teal); font-size:11px; font-weight:700; }
+    .logout-btn { border:1px solid var(--line); background:#fff; color:var(--ink); padding:8px 12px; border-radius:18px; }
+    .readonly-note { color:var(--muted); font-size:12px; margin-top:6px; }
   </style>
 </head>
-
 <body>
-<main>
-  <h1>Dawood Fam Finance</h1>
-  <p>Silakan login menggunakan akun Google keluarga.</p>
+<div class="login-wrap" id="loginScreen">
+  <div class="login-card">
+    <h1>Dawood's <span style="color:#287f78">Fam Finance</span></h1>
+    <p>More Abundant and Barokah.</p>
+    <p>Silakan login menggunakan akun Google keluarga yang sudah terdaftar.</p>
+    <button class="primary" id="loginButton" type="button" disabled>Login with Google</button>
+    <div class="login-status" id="loginStatus">Menyiapkan login Google...</div>
+  </div>
+</div>
+<div class="app" id="dashboardApp" style="display:none">
+  <header>
+    <div>
+      <div class="brand">Dawood's <span>Fam Finance</span></div>
+      <div class="subtitle">More Abundant and Barokah.</div>
+    </div>
+    <div class="account-tools">
+      <span class="role-pill" id="roleBadge"></span>
+      <button class="primary" id="addTransactionButton" onclick="openForm()">+ Add transaction</button>
+      <button class="logout-btn" type="button" onclick="logout()">Logout</button>
+    </div>
+  </header>
 
-  <button id="loginButton" disabled>Login with Google</button>
-  <div id="status">Menyiapkan login...</div>
-</main>
+  <div class="periods">
+    <button class="active" data-period="latest" onclick="setPeriod('latest', this)">
+      Latest Month
+    </button>
+    <button data-period="week" onclick="setPeriod('week',this)">This week</button>
+    <button data-period="today" onclick="setPeriod('today',this)">Today</button>
+    <button data-period="all" onclick="setPeriod('all',this)">All time</button>
+    <button data-period="custom" onclick="setPeriod('custom',this)">Custom</button>
+  </div>
+  <div class="date-range" id="dateRange" style="display:none">
+    <input type="date" id="startDate">
+    <input type="date" id="endDate">
+    <button class="secondary" onclick="applyCustom()">Apply</button>
+  </div>
+
+  <div class="cards">
+    <div class="card">
+      <div class="card-label">Total income</div>
+      <div class="amount income" id="totalIncome">Rp0</div>
+    </div>
+    <div class="card">
+      <div class="card-label">Total expenses</div>
+      <div class="amount expense" id="totalExpenses">Rp0</div>
+    </div>
+    <div class="card">
+      <div class="card-label">Net balance</div>
+      <div class="amount balance" id="netBalance">Rp0</div>
+    </div>
+  </div>
+
+  <div class="insights">
+    <div class="insight" id="largestCategory">Largest expense category: —</div>
+    <div class="insight" id="dailyAverage">Average daily expense: —</div>
+    <div class="insight" id="comparison">Previous period: —</div>
+  </div>
+
+  <div class="charts">
+    <div class="panel">
+      <div class="section-title">Expenses by category</div>
+      <div class="chart-wrap"><canvas id="categoryChart"></canvas></div>
+    </div>
+    <div class="panel">
+      <div class="section-title">Income vs expenses</div>
+      <div class="chart-wrap"><canvas id="trendChart"></canvas></div>
+    </div>
+  </div>
+
+  <div class="panel" style="margin-bottom:18px">
+    <div class="section-title">Budget benchmark</div>
+    <div id="benchmarkList" class="status">Loading benchmark...</div>
+  </div>
+
+  <div class="panel">
+    <div class="toolbar">
+      <div class="section-title" style="margin:0">Transaction history</div>
+      <input class="search" id="searchInput" placeholder="Search transactions..." oninput="renderHistory()">
+    </div>
+    <div class="toolbar">
+      <select id="typeFilter" onchange="renderHistory()">
+        <option value="all">All types</option>
+        <option value="income">Income</option>
+        <option value="expenses">Expenses</option>
+      </select>
+      <select id="categoryFilter" onchange="renderHistory()">
+        <option value="all">All categories</option>
+      </select>
+    </div>
+    <div class="table-wrap">
+      <table>
+        <thead><tr>
+          <th>Date</th><th>Type</th><th>Description</th>
+          <th>Details</th><th>Category</th><th>Amount</th><th id="actionsHeading">Actions</th>
+        </tr></thead>
+        <tbody id="historyBody"><tr><td colspan="7" class="empty">Loading...</td></tr></tbody>
+      </table>
+    </div>
+    <div class="status" id="recordCount"></div>
+  </div>
+  <div class="status" id="appStatus">Connecting to your spreadsheet...</div>
+  <div class="readonly-note" id="readonlyNote" style="display:none">Viewer access: transaksi hanya dapat dilihat.</div>
+</div>
+
+<div class="modal-backdrop" id="modalBackdrop">
+  <div class="modal">
+    <h2 id="formTitle">Add transaction</h2>
+    <form id="transactionForm" onsubmit="submitTransaction(event)">
+      <div class="form-grid">
+        <label>Transaction type
+          <select id="txType" required onchange="updateCategoryOptions()">
+            <option value="income">Income</option>
+            <option value="expenses">Expenses</option>
+          </select>
+        </label>
+        <label>Date <input id="txDate" type="date" required></label>
+        <label>Amount (IDR) <input id="txAmount" type="number" min="1" step="1" required placeholder="e.g. 50000"></label>
+        <label>Description <input id="txDescription" required placeholder="e.g. Grocery shopping"></label>
+        <label>Details / Subcategory
+          <input id="txDetails" list="detailOptions"
+            placeholder="e.g. Food"
+            oninput="updateSelectedCategory()">
+          <datalist id="detailOptions"></datalist>
+        </label>
+        <label>Category
+          <select id="txCategory"></select>
+        </label>
+        <label>Notes (optional) <input id="txNotes" placeholder="Additional notes"></label>
+      </div>
+      <div class="modal-actions">
+        <button type="button" class="secondary" onclick="closeForm()">Cancel</button>
+        <button type="submit" class="primary" id="saveButton">Save transaction</button>
+      </div>
+    </form>
+  </div>
+</div>
 
 <script>
-  const CLIENT_ID = '566836411644-tu4dt3manjr09t8b3s6i5bsvu2s4ja25.apps.googleusercontent.com';
-  const DEPLOYMENT_ID = 'AKfycbyU9vEElJ216vUrRmOEpZ0lGvRjUhEfy_4c10F9GhyF8e1khThpyuZaiDlI5jbxfDLZ';
+  let appData = { transactions: [], benchmarks: [], categoryMap: {} };
+  let period = 'latest';
+  let customRange = null;
+  let editingId = null;
+  let editingRow = null;
+  let categoryChart = null;
+  let trendChart = null;
+  let previousPeriod = null;
 
+  const money = n => new Intl.NumberFormat('id-ID', {
+    style: 'currency', currency: 'IDR', maximumFractionDigits: 0
+  }).format(Number(n) || 0);
+
+  function dateString(d) {
+    const y = d.getFullYear();
+    const m = String(d.getMonth()+1).padStart(2,'0');
+    const day = String(d.getDate()).padStart(2,'0');
+    return `${y}-${m}-${day}`;
+  }
+  function parseDate(value) {
+    if (!value) return null;
+    if (value instanceof Date) return new Date(value.getFullYear(),value.getMonth(),value.getDate());
+    const s = String(value);
+    const match = s.match(/^(\d{4})-(\d{2})-(\d{2})/);
+    if (match) return new Date(+match[1],+match[2]-1,+match[3]);
+    const d = new Date(value);
+    return isNaN(d) ? null : new Date(d.getFullYear(),d.getMonth(),d.getDate());
+  }
+  function today() { return new Date(new Date().getFullYear(),new Date().getMonth(),new Date().getDate()); }
+  function getRange() {
+    const t = today();
+
+    if (period === 'all') {
+      return { start: new Date(2000,0,1), end: t };
+    }
+
+    if (period === 'today') {
+      return { start: t, end: t };
+    }
+
+    if (period === 'week') {
+      const start = new Date(t);
+      start.setDate(t.getDate()-((t.getDay()+6)%7));
+      return { start, end: t };
+    }
+
+    if (period === 'custom' && customRange) {
+      return customRange;
+    }
+
+    if (period === 'latest') {
+      const dates = appData.transactions
+        .map(tx => parseDate(tx.date))
+        .filter(Boolean)
+        .sort((a,b) => b-a);
+
+      const latest = dates.length ? dates[0] : t;
+
+      return {
+        start: new Date(latest.getFullYear(), latest.getMonth(), 1),
+        end: new Date(latest.getFullYear(), latest.getMonth()+1, 0)
+      };
+    }
+
+    return {
+      start: new Date(t.getFullYear(), t.getMonth(), 1),
+      end: t
+    };
+  }
+
+  function inRange(tx, range) {
+    const d = parseDate(tx.date);
+    return d && d >= range.start && d <= range.end;
+  }
+  function getFilteredTransactions() {
+    const range = getRange();
+    return appData.transactions.filter(tx => inRange(tx,range));
+  }
+  function setPeriod(value,button) {
+    period = value;
+    customRange = null;
+    document.querySelectorAll('.periods button').forEach(b=>b.classList.remove('active'));
+    button.classList.add('active');
+    document.getElementById('dateRange').style.display = value==='custom'?'flex':'none';
+    if (value!=='custom') renderDashboard();
+  }
+  function applyCustom() {
+    const start = parseDate(document.getElementById('startDate').value);
+    const end = parseDate(document.getElementById('endDate').value);
+    if (!start || !end || start>end) return alert('Please select a valid date range.');
+    customRange = {start,end};
+    renderDashboard();
+  }
+  async function loadData() {
+    const status = document.getElementById('appStatus');
+    status.textContent = 'Loading transactions...';
+    try {
+      const data = await callAppsScript('getAppData');
+      appData = data || { transactions: [], benchmarks: [], categoryMap: {} };
+      appData.transactions = appData.transactions || [];
+      appData.benchmarks = appData.benchmarks || [];
+      appData.categoryMap = appData.categoryMap || {};
+      status.textContent = 'Connected to spreadsheet.';
+      period = 'latest';
+      populateCategoryFilter();
+      document.querySelectorAll('.periods button').forEach(b => b.classList.remove('active'));
+      document.querySelector('[data-period="latest"]')?.classList.add('active');
+      renderDashboard();
+    } catch (err) {
+      status.textContent = 'Connection error: ' + (err.message || err);
+      document.getElementById('historyBody').innerHTML =
+        '<tr><td colspan="7" class="empty">Data belum dapat dimuat. Periksa koneksi, lalu coba login kembali.</td></tr>';
+    }
+  }
+  function renderDashboard() {
+    const txs = getFilteredTransactions();
+    const income = txs.filter(t=>t.type==='income').reduce((s,t)=>s+Number(t.amount||0),0);
+    const expenses = txs.filter(t=>t.type==='expenses').reduce((s,t)=>s+Number(t.amount||0),0);
+    document.getElementById('totalIncome').textContent = money(income);
+    document.getElementById('totalExpenses').textContent = money(expenses);
+    const netBalance = income - expenses;
+    const balanceElement = document.getElementById('netBalance');
+
+    balanceElement.textContent = money(netBalance);
+
+    if (netBalance < 10000000) {
+      balanceElement.style.color = '#f59e0b';
+    } else {
+      balanceElement.style.color = '#287f78';
+    }
+
+
+    const byCategory = {};
+    txs.filter(t=>t.type==='expenses').forEach(t=>{
+      const c = t.category || 'Uncategorized';
+      byCategory[c] = (byCategory[c]||0)+Number(t.amount||0);
+    });
+    const sorted = Object.entries(byCategory).sort((a,b)=>b[1]-a[1]);
+    document.getElementById('largestCategory').textContent =
+      'Largest expense category: ' + (sorted.length ? `${sorted[0][0]} (${money(sorted[0][1])})` : '—');
+
+    const range = getRange();
+    const days = Math.max(1,Math.floor((range.end-range.start)/86400000)+1);
+    document.getElementById('dailyAverage').textContent = 'Average daily expense: ' + money(expenses/days);
+    document.getElementById('comparison').textContent = 'Previous period: comparison coming soon';
+
+    drawCharts(txs,sorted);
+    renderBenchmarks(txs);
+    renderHistory();
+  }
+  function drawCharts(txs,sorted) {
+    if (categoryChart) categoryChart.destroy();
+    if (trendChart) trendChart.destroy();
+
+    categoryChart = new Chart(document.getElementById('categoryChart'), {
+      type: 'doughnut',
+      data: {
+        labels: sorted.map(x => x[0]),
+        datasets: [{
+          data: sorted.map(x => x[1]),
+          backgroundColor: [
+            '#287f78',
+            '#e6a5b5',
+            '#83aaa5',
+            '#e7c4a0',
+            '#7896b2',
+            '#b8a5c9',
+            '#d6d8a0'
+          ]
+       }]
+     },
+     options: {
+       responsive: true,
+       maintainAspectRatio: false,
+       plugins: {
+         legend: {
+           position: 'bottom'
+         },
+         tooltip: {
+           callbacks: {
+             label: function(context) {
+               const values = context.dataset.data;
+               const total = values.reduce((a, b) => a + b, 0);
+               const value = context.raw;
+               const percentage = total > 0
+                 ? (value / total * 100).toFixed(1)
+                 : 0;
+
+               return context.label + ': ' +
+                 percentage + '% (Rp ' +
+                 value.toLocaleString('id-ID') + ')';
+              }
+            }
+         }
+       }
+     }
+   });
+    const range = getRange();
+    const daily = {};
+    txs.forEach(t=>{
+      const d = String(t.date).slice(0,10);
+      if (!daily[d]) daily[d] = {income:0,expenses:0};
+      daily[d][t.type] += Number(t.amount||0);
+    });
+    const labels = Object.keys(daily).sort();
+    trendChart = new Chart(document.getElementById('trendChart'), {
+      type:'bar',
+      data:{labels,datasets:[
+        {label:'Income',data:labels.map(d=>daily[d].income),backgroundColor:'#287f78'},
+        {label:'Expenses',data:labels.map(d=>daily[d].expenses),backgroundColor:'#e6a5b5'}
+      ]},
+      options:{responsive:true,maintainAspectRatio:false,scales:{y:{beginAtZero:true}},plugins:{legend:{position:'bottom'}}}
+    });
+  }
+  function renderBenchmarks(txs) {
+    const target = document.getElementById('benchmarkList');
+
+    if (!appData.benchmarks.length) {
+      target.textContent = 'No benchmark data found.';
+      return;
+    }
+
+     const totalIncome = txs
+       .filter(t => t.type === 'income')
+       .reduce((s, t) => s + Number(t.amount || 0), 0);
+
+     const expensesByCategory = {};
+
+     txs.filter(t => t.type === 'expenses').forEach(t => {
+       const c = t.category || 'Uncategorized';
+       expensesByCategory[c] =
+         (expensesByCategory[c] || 0) + Number(t.amount || 0);
+     });
+
+     target.innerHTML = appData.benchmarks.map(b => {
+       const max = Number(b.valueMax || 0);
+       const actual = expensesByCategory[b.category] || 0;
+
+       const pct = max > 0
+         ? Math.min(100, actual / max * 100)
+         : 0;
+
+       const overBudget = max > 0 && actual > max;
+
+       return `<div class="benchmark-row">
+         <div class="benchmark-head">
+           <strong>${escapeHtml(b.category)}</strong>
+           <span>${money(actual)} / ${money(max)}</span>
+         </div>
+         <div class="bar">
+           <div style="width:${pct}%; ${overBudget ? 'background-color:#dc2626;' : ''}"></div>
+         </div>
+       </div>`;
+     }).join('');
+  }
+
+  function populateCategoryFilter() {
+    const select=document.getElementById('categoryFilter');
+    const values=[...new Set(appData.transactions.map(t=>t.category).filter(Boolean))].sort();
+    select.innerHTML='<option value="all">All categories</option>'+values.map(v=>`<option value="${escapeHtml(v)}">${escapeHtml(v)}</option>`).join('');
+  }
+  function renderHistory() {
+    const query=document.getElementById('searchInput').value.toLowerCase();
+    const type=document.getElementById('typeFilter').value;
+    const category=document.getElementById('categoryFilter').value;
+    const rows=getFilteredTransactions().filter(t=>{
+      const text=[t.description,t.details,t.category,t.notes].join(' ').toLowerCase();
+      return (type==='all'||t.type===type) && (category==='all'||t.category===category) && text.includes(query);
+    }).sort((a,b)=>String(b.date).localeCompare(String(a.date)));
+    const body=document.getElementById('historyBody');
+    if (!rows.length) body.innerHTML='<tr><td colspan="7" class="empty">No transactions found.</td></tr>';
+    else body.innerHTML=rows.map(t=>`<tr>
+      <td>${escapeHtml(String(t.date||'').slice(0,10))}</td>
+      <td><span class="tag ${t.type==='expenses'?'exp':''}">${t.type==='income'?'Income':'Expense'}</span></td>
+      <td>${escapeHtml(t.description||'')}</td>
+      <td>${escapeHtml(t.details||'')}</td>
+      <td>${escapeHtml(t.category||'—')}</td>
+      <td>${money(t.amount)}</td>
+      <td class="actions">${currentRole === 'ADMIN' ? `
+        <button onclick="editTransaction('${escapeJs(t.id)}')">Edit</button>
+        <button class="danger" onclick="deleteTransaction('${escapeJs(t.id)}')">Delete</button>
+      ` : ''}</td>
+    </tr>`).join('');
+    document.getElementById('recordCount').textContent=rows.length+' transaction(s)';
+  }
+  function openForm() {
+    editingId=null;
+    editingRow=null;
+    document.getElementById('transactionForm').reset();
+    document.getElementById('formTitle').textContent='Add transaction';
+    document.getElementById('txDate').value=dateString(today());
+    document.getElementById('saveButton').textContent='Save transaction';
+    updateCategoryOptions();
+    document.getElementById('modalBackdrop').style.display='flex';
+  }
+  function closeForm() { document.getElementById('modalBackdrop').style.display='none'; }
+  function updateCategoryOptions() {
+    const type=document.getElementById('txType').value;
+    const category=document.getElementById('txCategory');
+    const details=document.getElementById('detailOptions');
+    if (type==='income') {
+      category.innerHTML='<option value="Salary">Salary</option><option value="Other Income">Other Income</option>';
+      details.innerHTML='<option value="Salary"></option>';
+    } else {
+      const map=appData.categoryMap||{};
+      const categories=[...new Set(Object.values(map))].filter(Boolean).sort();
+      category.innerHTML=categories.map(c=>`<option value="${escapeHtml(c)}">${escapeHtml(c)}</option>`).join('');
+      details.innerHTML=Object.keys(map).map(d=>`<option value="${escapeHtml(d)}"></option>`).join('');
+      if (!categories.length) category.innerHTML='<option value="Uncategorized">Uncategorized</option>';
+    }
+  }
+
+  function updateSelectedCategory() {
+    const details = document.getElementById('txDetails').value.trim();
+    const category = document.getElementById('txCategory');
+    const map = appData.categoryMap || {};
+
+    const matchedKey = Object.keys(map).find(
+      key => key.toLowerCase() === details.toLowerCase()
+    );
+
+    if (matchedKey) {
+      category.value = map[matchedKey];
+    }
+  }
+
+  async function submitTransaction(event) {
+    event.preventDefault();
+    if (currentRole !== 'ADMIN') return alert('Akun ini hanya memiliki akses melihat transaksi.');
+    const type = document.getElementById('txType').value;
+    const details = document.getElementById('txDetails').value.trim();
+    const category = type === 'expenses'
+      ? (appData.categoryMap[details] || document.getElementById('txCategory').value)
+      : document.getElementById('txCategory').value;
+    const data = {
+      id: editingId,
+      row: editingRow,
+      type,
+      date: document.getElementById('txDate').value,
+      amount: Number(document.getElementById('txAmount').value),
+      description: document.getElementById('txDescription').value.trim(),
+      details,
+      category,
+      notes: document.getElementById('txNotes').value.trim()
+    };
+    if (!data.date || !data.amount || data.amount <= 0 || !data.description) {
+      return alert('Please complete the required fields.');
+    }
+    const button = document.getElementById('saveButton');
+    button.disabled = true;
+    button.textContent = editingId ? 'Updating...' : 'Saving...';
+    try {
+      await callAppsScript(editingId ? 'updateTransaction' : 'saveTransaction', [data]);
+      closeForm();
+      await loadData();
+      alert('Transaction saved successfully.');
+    } catch (err) {
+      alert('Unable to save: ' + (err.message || err));
+    } finally {
+      button.disabled = false;
+      button.textContent = editingId ? 'Update transaction' : 'Save transaction';
+    }
+  }
+  function editTransaction(id) {
+    const tx=appData.transactions.find(t=>String(t.id)===String(id));
+    if (!tx) return alert('Transaction not found.');
+    editingId=id;
+    editingRow=tx.row;
+    document.getElementById('formTitle').textContent='Edit transaction';
+    document.getElementById('txType').value=tx.type;
+    updateCategoryOptions();
+    document.getElementById('txDate').value=String(tx.date).slice(0,10);
+    document.getElementById('txAmount').value=tx.amount;
+    document.getElementById('txDescription').value=tx.description||'';
+    document.getElementById('txDetails').value=tx.details||'';
+    document.getElementById('txCategory').value=tx.category||'';
+    document.getElementById('txNotes').value=tx.notes||'';
+    document.getElementById('saveButton').textContent='Update transaction';
+    document.getElementById('modalBackdrop').style.display='flex';
+  }
+  async function deleteTransaction(id) {
+    if (currentRole !== 'ADMIN') return alert('Akun ini hanya memiliki akses melihat transaksi.');
+    const tx = appData.transactions.find(t => String(t.id) === String(id));
+    if (!tx) return alert('Transaction not found.');
+    if (!confirm('Are you sure you want to delete this transaction?')) return;
+    try {
+      await callAppsScript('deleteTransaction', [tx.type, tx.row]);
+      await loadData();
+      alert('Transaction deleted.');
+    } catch (err) {
+      alert('Unable to delete: ' + (err.message || err));
+    }
+  }
+
+  function escapeHtml(value) {
+    return String(value??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+  }
+  function escapeJs(value) {
+    return String(value??'').replace(/\\/g,'\\\\').replace(/'/g,"\\'").replace(/"/g,'\\"');
+  }
+  // Konfigurasi Google OAuth dan Apps Script API.
+  const CLIENT_ID = '566836411644-tu4dt3manjr09t8b3s6i5bsvu2s4ja25.apps.googleusercontent.com';
+  // Deployment ID ini adalah ID yang telah berhasil diuji pada halaman login sebelumnya.
+  const DEPLOYMENT_ID = 'AKfycbyU9vEElJ216vUrRmOEpZ0lGvRjUhEfy_4c10F9GhyF8e1khThpyuZaiDlI5jbxfDLZ';
+  const ADMIN_EMAIL = 'ditasundary07@gmail.com';
+  const VIEWER_EMAIL = 'daud.dawood21@gmail.com';
   const SCOPES = [
     'https://www.googleapis.com/auth/spreadsheets',
     'https://www.googleapis.com/auth/userinfo.email'
   ].join(' ');
 
-  let tokenClient;
-  let accessToken = '';
+  let accessToken = null;
+  let tokenClient = null;
+  let currentUserEmail = null;
+  let currentRole = null;
 
-  const statusBox = document.getElementById('status');
-  const loginButton = document.getElementById('loginButton');
-
-  function setStatus(message) {
-    statusBox.textContent = message;
+  function setLoginStatus(message) {
+    document.getElementById('loginStatus').textContent = message;
   }
 
   function initializeGoogleLogin() {
-    if (!window.google?.accounts?.oauth2) {
-      setStatus('Google Login belum siap. Muat ulang halaman.');
+    if (!window.google || !google.accounts || !google.accounts.oauth2) {
+      setLoginStatus('Google Sign-In belum termuat. Periksa internet lalu refresh halaman.');
       return;
     }
-
     tokenClient = google.accounts.oauth2.initTokenClient({
       client_id: CLIENT_ID,
       scope: SCOPES,
       callback: async (response) => {
-        if (response.error) {
-          setStatus('Login gagal: ' + response.error);
+        if (response.error || !response.access_token) {
+          setLoginStatus('Login gagal: ' + (response.error_description || response.error || 'token tidak diterima.'));
           return;
         }
-
         accessToken = response.access_token;
-        await testConnection();
-      }
-    });
-
-    loginButton.disabled = false;
-    setStatus('Siap. Silakan login.');
-  }
-
-  async function testConnection() {
-    setStatus('Menghubungkan ke Apps Script...');
-
-    try {
-      const response = await fetch(
-        `https://script.googleapis.com/v1/scripts/${DEPLOYMENT_ID}:run`,
-        {
-          method: 'POST',
-          headers: {
-            'Authorization': 'Bearer ' + accessToken,
-            'Content-Type': 'application/json'
-          },
-          body: JSON.stringify({
-            function: 'testCurrentUser',
-            parameters: []
-          })
+        setLoginStatus('Memeriksa akun Google...');
+        try {
+          const email = await callAppsScript('testCurrentUser');
+          currentUserEmail = String(email || '').toLowerCase();
+          if (currentUserEmail === ADMIN_EMAIL) currentRole = 'ADMIN';
+          else if (currentUserEmail === VIEWER_EMAIL) currentRole = 'VIEWER';
+          else throw new Error('Akun ' + currentUserEmail + ' belum memiliki akses ke aplikasi.');
+          showDashboard();
+          await loadData();
+        } catch (err) {
+          accessToken = null;
+          currentUserEmail = null;
+          currentRole = null;
+          setLoginStatus(err.message || String(err));
         }
-      );
-
-      const data = await response.json();
-
-      if (!response.ok) {
-        throw new Error(data.error?.message || 'HTTP ' + response.status);
       }
-
-      if (data.error) {
-        throw new Error(
-          data.error.details?.[0]?.errorMessage ||
-          data.error.message ||
-          'Apps Script execution failed'
-        );
-      }
-
-      setStatus(
-        'Koneksi berhasil! Akun terdeteksi: ' +
-        (data.response?.result || 'Email tidak terdeteksi')
-      );
-
-    } catch (error) {
-      setStatus('Koneksi gagal: ' + error.message);
-    }
+    });
+    document.getElementById('loginButton').disabled = false;
+    setLoginStatus('Silakan login dengan akun Google keluarga.');
   }
 
-  loginButton.addEventListener('click', () => {
-    if (!tokenClient) return;
+  function startLogin() {
+    if (!tokenClient) {
+      setLoginStatus('Login Google belum siap. Silakan refresh halaman.');
+      return;
+    }
+    tokenClient.requestAccessToken({ prompt: 'select_account' });
+  }
 
-    tokenClient.requestAccessToken({
-      prompt: 'consent'
-    });
-  });
+  async function callAppsScript(functionName, parameters = []) {
+    if (!accessToken) throw new Error('Sesi login tidak tersedia. Silakan login kembali.');
+    const response = await fetch(
+      'https://script.googleapis.com/v1/scripts/' + DEPLOYMENT_ID + ':run',
+      {
+        method: 'POST',
+        headers: {
+          'Authorization': 'Bearer ' + accessToken,
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({ function: functionName, parameters: parameters })
+      }
+    );
+    let payload;
+    try {
+      payload = await response.json();
+    } catch (e) {
+      throw new Error('Respons server tidak dapat dibaca. HTTP ' + response.status);
+    }
+    if (!response.ok) {
+      throw new Error((payload && payload.error && payload.error.message) || ('API request failed (HTTP ' + response.status + ').'));
+    }
+    if (payload.error) {
+      const detail = (payload.error.details || []).map(x => x.errorMessage).filter(Boolean).join(' ');
+      throw new Error(detail || payload.error.message || 'Apps Script execution failed.');
+    }
+    if (payload.response && payload.response.result !== undefined) return payload.response.result;
+    if (payload.response && payload.response.error) {
+      throw new Error(payload.response.error.message || 'Apps Script returned an error.');
+    }
+    return null;
+  }
 
+  function showDashboard() {
+    document.getElementById('loginScreen').style.display = 'none';
+    document.getElementById('dashboardApp').style.display = 'block';
+    document.getElementById('roleBadge').textContent = currentRole + ' · ' + currentUserEmail;
+    const viewer = currentRole === 'VIEWER';
+    document.getElementById('addTransactionButton').style.display = viewer ? 'none' : '';
+    document.getElementById('actionsHeading').style.display = viewer ? 'none' : '';
+    document.getElementById('readonlyNote').style.display = viewer ? 'block' : 'none';
+  }
+
+  function logout() {
+    if (accessToken && window.google && google.accounts && google.accounts.oauth2) {
+      google.accounts.oauth2.revoke(accessToken, function() {});
+    }
+    accessToken = null;
+    currentUserEmail = null;
+    currentRole = null;
+    appData = { transactions: [], benchmarks: [], categoryMap: {} };
+    if (categoryChart) { categoryChart.destroy(); categoryChart = null; }
+    if (trendChart) { trendChart.destroy(); trendChart = null; }
+    document.getElementById('dashboardApp').style.display = 'none';
+    document.getElementById('loginScreen').style.display = 'flex';
+    setLoginStatus('Anda sudah logout. Silakan login kembali.');
+  }
+
+  document.getElementById('loginButton').addEventListener('click', startLogin);
   window.addEventListener('load', initializeGoogleLogin);
 </script>
 </body>
