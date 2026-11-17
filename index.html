@@ -791,5 +791,22 @@
   document.getElementById('loginButton').addEventListener('click', startLogin);
   window.addEventListener('load', initializeGoogleLogin);
 </script>
+  
+<script>
+  if ('serviceWorker' in navigator) {
+    window.addEventListener('load', () => {
+      navigator.serviceWorker.register(
+        '/family-finance-pwa/service-worker.js',
+        { scope: '/family-finance-pwa/' }
+      )
+      .then(registration => {
+        console.log('PWA Service Worker aktif:', registration.scope);
+      })
+      .catch(error => {
+        console.error('Service Worker gagal:', error);
+      });
+    });
+  }
+</script>
 </body>
 </html>
